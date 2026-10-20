@@ -231,6 +231,18 @@ def fetch_q2_master(host: str, port: int = 27900, timeout: float = 5.0) -> list[
 		sock.close()
 
 
+def parse_addr_file(text: str) -> list[str]:
+	addrs: list[str] = []
+	for line in text.splitlines():
+		line = line.strip()
+		if not line or line.startswith("#"):
+			continue
+		m = ADDR_RE.match(line)
+		if m:
+			addrs.append(f"{m.group(1)}:{m.group(2)}")
+	return addrs
+
+
 def fetch_hambloch() -> list[str]:
 	req = urllib.request.Request(
 		HAMBLOCH_URL,
@@ -243,15 +255,14 @@ def fetch_hambloch() -> list[str]:
 	)
 	with urllib.request.urlopen(req, timeout=60) as resp:
 		text = resp.read().decode("utf-8", "replace")
-	addrs: list[str] = []
-	for line in text.splitlines():
-		line = line.strip()
-		if not line or line.startswith("#"):
-			continue
-		m = ADDR_RE.match(line)
-		if m:
-			addrs.append(f"{m.group(1)}:{m.group(2)}")
-	return addrs
+	return parse_addr_file(text)
+
+
+def load_extras(root: Path) -> list[str]:
+	path = root / "extras.txt"
+	if not path.is_file():
+		return []
+	return parse_addr_file(path.read_text(encoding="utf-8"))
 
 
 def normalize(addr: str) -> str | None:
@@ -278,6 +289,11 @@ def main() -> int:
 
 	sources: dict[str, list[str]] = {}
 	errors: list[str] = []
+
+	extras = load_extras(root)
+	if extras:
+		sources["extras.txt"] = extras
+		print(f"extras.txt: {len(extras)} addresses")
 
 	try:
 		sources["hambloch.com/kingpin/servers_active.php?gameport=1"] = fetch_hambloch()

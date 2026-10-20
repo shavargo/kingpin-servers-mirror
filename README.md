@@ -8,6 +8,7 @@ Daily merged Kingpin server address list for launchers and tools.
 
 | Source | How |
 |--------|-----|
+| `extras.txt` | Always-included addresses (pinned servers) |
 | [hambloch.com/kingpin/servers_active.php?gameport=1](https://hambloch.com/kingpin/servers_active.php?gameport=1) | HTTP scrape (M-Browser seed) |
 | `master.333networks.com` (+ errorist, newbiesplayground, kingpin.info, …) | Gamespy v0 TCP list on **28900** |
 | `master.hambloch.com` / `master.kingpin.info` | Quake II UDP `query` on **27900** (when reachable) |
