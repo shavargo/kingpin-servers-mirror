@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Build a merged Kingpin address list from Hambloch + community masters."""
+"""Build a merged Kingpin address list from Hambloch + community masters.
+
+List entries are **game (connect) ports** only — what `+connect` uses.
+UDP status normally answers on query port = game − 10 (Kingpin convention).
+"""
 
 from __future__ import annotations
 
@@ -15,7 +19,10 @@ GAMENAME = "kingpin"
 # Public GameSpy gamekey for Kingpin (gslist.cfg / maraakate gsmaster).
 GAMEKEY = b"QFWxY2"
 
-HAMBLOCH_URL = "https://hambloch.com/kingpin/servers_active.php?gameport=1"
+# Preferred public endpoints (per M. Hambloch). Use servers_active.php endpoints.
+HAMBLOCH_GAMEPORT_URL = (
+	"https://hambloch.com/kingpin/servers_active.php?gameport=1"
+)
 
 # Gamespy v0 list servers (TCP 28900). UDP 27900 is for heartbeats only.
 GAMESPY_MASTERS = [
@@ -27,7 +34,6 @@ GAMESPY_MASTERS = [
 ]
 
 # Quake II–style masters (UDP 27900, "query" → packed server list).
-# Kingpin servers that setmaster these show up here; overlaps Hambloch.
 Q2_MASTERS = [
 	"master.hambloch.com",
 	"master.kingpin.info",
@@ -98,7 +104,6 @@ def parse_kv(data: bytes) -> dict[str, bytes]:
 def parse_packed_servers(data: bytes) -> list[str]:
 	"""Parse Q2 'servers\\n' + 6-byte (ip4 + port BE) records."""
 	addrs: list[str] = []
-	# Strip OOB header if present
 	if data.startswith(b"\xff\xff\xff\xff"):
 		data = data[4:]
 	idx = data.find(b"servers")
@@ -108,7 +113,6 @@ def parse_packed_servers(data: bytes) -> list[str]:
 	if payload.startswith(b"\n"):
 		payload = payload[1:]
 	elif payload.startswith(b"Response"):
-		# dpmaster-style; skip for now
 		return addrs
 
 	for i in range(0, len(payload) - 5, 6):
@@ -126,11 +130,9 @@ def parse_packed_servers(data: bytes) -> list[str]:
 def parse_compressed_cmp(data: bytes) -> list[str]:
 	"""Parse Gamespy \\list\\cmp\\ body: raw 6-byte records (no \\ip\\ markers)."""
 	addrs: list[str] = []
-	# Drop trailing \\final\\ and any leading ASCII noise
 	end = data.find(b"\\final\\")
 	if end >= 0:
 		data = data[:end]
-	# If plaintext \\ip\\ slipped in, ignore this path
 	if b"\\ip\\" in data:
 		return addrs
 	for i in range(0, len(data) - 5, 6):
@@ -143,22 +145,16 @@ def parse_compressed_cmp(data: bytes) -> list[str]:
 	return addrs
 
 
-def kingpin_game_ports(query_addr: str) -> list[str]:
-	"""Gamespy lists Kingpin *query* ports; game/connect is typically +10.
-
-	See https://kingpin.info/?p=ports (31500–31509 query → 31510–31519 game).
-	We keep the query port (status may answer there) and add game port +10.
-	"""
+def query_to_game_port(query_addr: str) -> str | None:
+	"""Gamespy masters advertise Kingpin *query* ports; connect is query + 10."""
 	norm = normalize(query_addr)
 	if not norm:
-		return []
+		return None
 	ip, port_s = norm.split(":")
-	port = int(port_s)
-	out = [norm]
-	game = port + 10
-	if 1 <= game <= 65535:
-		out.append(f"{ip}:{game}")
-	return out
+	game = int(port_s) + 10
+	if not (1 <= game <= 65535):
+		return None
+	return f"{ip}:{game}"
 
 
 def fetch_gamespy_master(host: str, port: int = 28900, timeout: float = 12.0) -> list[str]:
@@ -195,11 +191,13 @@ def fetch_gamespy_master(host: str, port: int = 28900, timeout: float = 12.0) ->
 		addrs = [m.decode("ascii") for m in IP_KV_RE.findall(data)]
 		if not addrs:
 			addrs = parse_compressed_cmp(data)
-		# Expand query → game ports for Kingpin
-		expanded: list[str] = []
+		# Store game ports only (no query+game duplicates).
+		game_ports: list[str] = []
 		for a in addrs:
-			expanded.extend(kingpin_game_ports(a))
-		return list(dict.fromkeys(expanded))
+			g = query_to_game_port(a)
+			if g:
+				game_ports.append(g)
+		return list(dict.fromkeys(game_ports))
 	finally:
 		sock.close()
 
@@ -211,9 +209,7 @@ def fetch_q2_master(host: str, port: int = 27900, timeout: float = 5.0) -> list[
 	try:
 		sock.sendto(payload, (host, port))
 		chunks: list[bytes] = []
-		# Some masters send multiple packets
-		deadline = timeout
-		sock.settimeout(deadline)
+		sock.settimeout(timeout)
 		try:
 			while True:
 				data, _ = sock.recvfrom(65535)
@@ -243,12 +239,12 @@ def parse_addr_file(text: str) -> list[str]:
 	return addrs
 
 
-def fetch_hambloch() -> list[str]:
+def fetch_hambloch_gameports() -> list[str]:
 	req = urllib.request.Request(
-		HAMBLOCH_URL,
+		HAMBLOCH_GAMEPORT_URL,
 		headers={
 			"User-Agent": (
-				"kingpin-servers-mirror/1.1 "
+				"kingpin-servers-mirror/1.2 "
 				"(+https://github.com/shavargo/kingpin-servers-mirror)"
 			)
 		},
@@ -296,8 +292,11 @@ def main() -> int:
 		print(f"extras.txt: {len(extras)} addresses")
 
 	try:
-		sources["hambloch.com/kingpin/servers_active.php?gameport=1"] = fetch_hambloch()
-		print(f"hambloch: {len(sources['hambloch.com/kingpin/servers_active.php?gameport=1'])} addresses")
+		sources["hambloch.com/servers_active.php?gameport=1"] = fetch_hambloch_gameports()
+		print(
+			"hambloch gameport: "
+			f"{len(sources['hambloch.com/servers_active.php?gameport=1'])} addresses"
+		)
 	except Exception as exc:  # noqa: BLE001
 		errors.append(f"hambloch: {exc}")
 		print(f"hambloch FAILED: {exc}", file=sys.stderr)
@@ -340,7 +339,7 @@ def main() -> int:
 
 	now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 	lines = [
-		"# Merged Kingpin server address list",
+		"# Merged Kingpin server address list (game / connect ports)",
 		f"# Last fetch (UTC): {now}",
 		"# Sources:",
 	]
@@ -352,10 +351,10 @@ def main() -> int:
 			lines.append(f"#   - {e}")
 	lines.append("#")
 	lines.append(
-		"# Format: ip:port  (live name/map/players come from UDP status queries)"
+		"# Format: ip:gameport  (UDP status usually on gameport-10; launcher probes both)"
 	)
 	lines.append(
-		"# Gamespy masters advertise query ports; game ports (+10) are also listed."
+		"# Hambloch source: servers_active.php?gameport=1"
 	)
 	lines.append("#")
 

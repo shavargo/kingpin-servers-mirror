@@ -1,47 +1,25 @@
-# Merged Kingpin server address list
-# Last fetch (UTC): 2026-10-20T17:09:21Z
+# Merged Kingpin server address list (game / connect ports)
+# Last fetch (UTC): 2026-10-20T20:44:15Z
 # Sources:
 #   - extras.txt: 3
-#   - hambloch.com/kingpin/servers_active.php?gameport=1: 38
-#   - gamespy://master.333networks.com:28900: 40
-#   - gamespy://master.errorist.eu:28900: 40
-#   - gamespy://master1.kingpin.info:28900: 40
-#   - gamespy://master.newbiesplayground.net:28900: 40
-#   - q2udp://master.hambloch.com:27900: 38
-#   - q2udp://master.kingpin.info:27900: 38
-#   - q2udp://master0.kingpin.info:27900: 38
+#   - gamespy://master.333networks.com:28900: 20
+#   - gamespy://master.errorist.eu:28900: 20
+#   - gamespy://master1.kingpin.info:28900: 20
+#   - gamespy://master.newbiesplayground.net:28900: 20
+#   - gamespy://master.frag-net.com:28900: 20
 # Failures (non-fatal if other sources succeeded):
-#   - gamespy://master.frag-net.com:28900: timed out
+#   - hambloch: <urlopen error [WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond>
+#   - q2udp://master.hambloch.com:27900: no response
+#   - q2udp://master.kingpin.info:27900: no response
+#   - q2udp://master0.kingpin.info:27900: no response
 #   - q2udp://master3.kingpin.info:27900: no response
 #
-# Format: ip:port  (live name/map/players come from UDP status queries)
-# Gamespy masters advertise query ports; game ports (+10) are also listed.
+# Format: ip:gameport  (UDP status usually on gameport-10; launcher probes both)
+# Hambloch source: servers_active.php?gameport=1
 #
 15.204.246.120:31510
 15.204.246.120:31511
 15.204.246.120:31512
-45.94.58.60:27910
-45.94.58.60:31510
-45.94.58.60:31512
-45.94.58.60:31515
-45.94.58.60:31516
-45.94.58.60:31519
-45.155.173.122:31510
-81.109.189.39:31511
-93.226.83.200:31510
-93.226.83.200:31512
-100.40.10.249:31510
-108.181.63.74:31510
-108.181.63.74:31511
-108.181.63.74:31512
-150.107.201.184:31500
-150.107.201.184:31501
-150.107.201.184:31502
-150.107.201.184:31503
-150.107.201.184:31504
-150.107.201.184:31505
-150.107.201.184:31507
-150.107.201.184:31508
 150.107.201.184:31510
 150.107.201.184:31511
 150.107.201.184:31512
@@ -50,31 +28,14 @@
 150.107.201.184:31515
 150.107.201.184:31517
 150.107.201.184:31518
-150.107.201.184:31521
-150.107.201.184:31522
-150.107.201.184:31523
-150.107.201.184:31524
-150.107.201.184:31527
-150.107.201.184:31529
 150.107.201.184:31531
 150.107.201.184:31532
 150.107.201.184:31533
 150.107.201.184:31534
 150.107.201.184:31537
 150.107.201.184:31539
-163.245.220.116:31511
-163.245.220.116:31513
-163.245.220.116:31517
-163.245.220.116:31518
-203.212.17.27:31201
 203.212.17.27:31211
-203.212.17.27:31345
 203.212.17.27:31355
-203.212.17.27:31399
-203.212.17.27:31503
-203.212.17.27:31505
-203.212.17.27:31506
-203.212.17.27:31509
 203.212.17.27:31513
 203.212.17.27:31515
 203.212.17.27:31516
