@@ -15,25 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch from Hambloch
+      - name: Fetch and merge server lists
         run: |
           set -euo pipefail
-          curl -fsSL \
-            -A "kingpin-servers-mirror/1.0 (+https://github.com/shavargo/kingpin-servers-mirror)" \
-            --retry 3 --retry-delay 5 --connect-timeout 20 --max-time 60 \
-            -o servers.txt.tmp \
-            "https://hambloch.com/kingpin/servers_active.php?gameport=1"
-          # Require at least a few address lines
-          count="$(grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' servers.txt.tmp | wc -l | tr -d ' ')"
-          echo "Parsed $count server addresses"
+          python3 scripts/fetch_servers.py
+          count="$(grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' servers.txt | wc -l | tr -d ' ')"
+          echo "Merged address count: $count"
           test "$count" -ge 5
-          {
-            echo "# Mirrored from https://hambloch.com/kingpin/servers_active.php?gameport=1"
-            echo "# Last fetch (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "#"
-            cat servers.txt.tmp
-          } > servers.txt
-          rm -f servers.txt.tmp
 
       - name: Commit and push if changed
         run: |
@@ -44,5 +32,5 @@ jobs:
             echo "No changes"
             exit 0
           fi
-          git commit -m "chore: refresh servers.txt from hambloch.com"
+          git commit -m "chore: refresh servers.txt from Hambloch + masters"
           git push
