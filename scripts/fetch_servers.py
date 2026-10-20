@@ -19,7 +19,7 @@ GAMENAME = "kingpin"
 # Public GameSpy gamekey for Kingpin (gslist.cfg / maraakate gsmaster).
 GAMEKEY = b"QFWxY2"
 
-# Preferred public endpoints (per M. Hambloch). Use servers_active.php endpoints.
+# Public Hambloch endpoint (game / connect ports).
 HAMBLOCH_GAMEPORT_URL = (
 	"https://hambloch.com/kingpin/servers_active.php?gameport=1"
 )
@@ -352,9 +352,6 @@ def main() -> int:
 	lines.append("#")
 	lines.append(
 		"# Format: ip:gameport  (UDP status usually on gameport-10; launcher probes both)"
-	)
-	lines.append(
-		"# Hambloch source: servers_active.php?gameport=1"
 	)
 	lines.append("#")
 

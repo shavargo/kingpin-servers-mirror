@@ -15,7 +15,6 @@
 #   - q2udp://master3.kingpin.info:27900: no response
 #
 # Format: ip:gameport  (UDP status usually on gameport-10; launcher probes both)
-# Hambloch source: servers_active.php?gameport=1
 #
 15.204.246.120:31510
 15.204.246.120:31511
