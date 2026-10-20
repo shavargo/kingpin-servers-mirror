@@ -1,0 +1,38 @@
+45.94.58.60:27910 "Luschen Quakematch +Bots" map q2dm8 at                 (null) 0/10 players 0 ms
+45.94.58.60:31510 "Luschen Botmatch" map ddkp1 at                 (null) 0/20 players 0 ms
+45.94.58.60:31512 "Luschen Deathmatch" map kpdm5 at                 (null) 0/16 players 0 ms
+45.94.58.60:31515 "Luschen COOP" map coop_1church at                 (null) 0/12 players 0 ms
+45.94.58.60:31516 "Luschen Gunrace +Bots" map upndn at                 (null) 0/21 players 0 ms
+45.94.58.60:31519 "---Battys kit---" map kitbudproa at                 (null) 0/20 players 0 ms
+203.212.17.27:31211 "macanah.mooo.com Street wars MoD au" map kpdm3 at                 (null) 0/24 players 322 ms
+203.212.17.27:31355 "macanah.mooo.com KP ffa BOTMATCH" map dm_deadthings_2016 at                 (null) 0/20 players 319 ms
+203.212.17.27:31399 "macanah.mooo.com Kingpin Speedway" map mnh_speedway1 at                 (null) 0/16 players 331 ms
+203.212.17.27:31513 "macanah.mooo.com riotz mod" map riotz_turf3 at                 (null) 0/26 players 324 ms
+203.212.17.27:31515 "macanah.mooo.com KP Jedi Force Mod" map space_riots at                 (null) 0/20 players 323 ms
+203.212.17.27:31516 "macanah.mooo.com Kpz coop" map coop_detroit at                 (null) 0/10 players 324 ms
+203.212.17.27:31519 "macanah.mooo.com Kp CTF" map ctf_kaos_beta at                 (null) 0/34 players 318 ms
+81.109.189.39:31511 "AoM's UK Riotz Server" map riotz_turf3 at                 (null) 0/18 players 36 ms
+108.181.63.74:31510 "End of Existence - Bagman" map bm_village_b2 at                 (null) 0/30 players 100 ms
+108.181.63.74:31511 "Detropolis DM" map detropolis at                 (null) 0/30 players 100 ms
+108.181.63.74:31512 "Colors - CTF v1.6 Server" map ctf_terminal at                 (null) 0/20 players 100 ms
+163.245.220.116:31511 "''Boiler Room'' Deathmatch" map morph_rev at                 (null) 0/32 players 86 ms
+163.245.220.116:31513 "''Boiler Room'' C.R.A.S.H" map bom_dust_cz_b7 at                 (null) 0/32 players 91 ms
+163.245.220.116:31517 "East Coast Snitch Slappa" map team_waste_beta1 at                 (null) 0/32 players 84 ms
+163.245.220.116:31518 "''Boiler Room'' Bagman (with bots!)" map team_green_river at                 (null) 0/32 players 95 ms
+45.155.173.122:31510 "Dark Fiber FFA | Frankfurt" map gangsta at                 (null) 0/16 players 6 ms
+150.107.201.184:31510 "Newskool Classic Gangbang" map sickre_2018 at                 (null) 0/24 players 14 ms
+150.107.201.184:31511 "Newskool Instagib" map sickre at                 (null) 0/24 players 14 ms
+150.107.201.184:31512 "Newskool Bagman" map team_waste_beta1 at                 (null) 0/30 players 19 ms
+150.107.201.184:31513 "Newskool Fragfest" map deadmans_alley at                 (null) 0/24 players 14 ms
+150.107.201.184:31514 "Newskool CTF" map ctf_commotion_beta at                 (null) 0/24 players 19 ms
+150.107.201.184:31515 "Newskool Crash Squad" map bom_550hope at                 (null) 0/24 players 15 ms
+150.107.201.184:31517 "Newskool Gunrace" map butlers_gunrace_b1 at                 (null) 0/24 players 19 ms
+150.107.201.184:31518 "Newskool Killapin" map kpdm5_power2 at                 (null) 0/24 players 14 ms
+150.107.201.184:31531 "Newskool Kill Confirmed" map 187_rev2 at                 (null) 0/24 players 14 ms
+150.107.201.184:31532 "Newskool Hitmen" map tsunami at                 (null) 0/24 players 14 ms
+150.107.201.184:31533 "Newskool Chicken Chase" map deadzone at                 (null) 0/24 players 14 ms
+150.107.201.184:31534 "Newskool Rocketfest" map sickre_2018 at                 (null) 0/24 players 19 ms
+150.107.201.184:31537 "Newskool Halloween" map hw_piss_hole at                 (null) 0/30 players 19 ms
+93.226.83.200:31510 "BM - kp.satoki.org" map team_ak_colt at                 (null) 0/32 players 17 ms
+93.226.83.200:31512 "COOP (companions WIP) - kp.satoki.org" map sr1 at                 (null) 0/4 players 15 ms
+100.40.10.249:31510 "n@m's K!t R0@st" map kppracbeta at                 (null) 0/12 players 105 ms
