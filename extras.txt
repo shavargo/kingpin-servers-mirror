@@ -1,4 +1,0 @@
-# Always-included addresses (not scraped). One ip:gameport per line.
-15.204.246.120:31510
-15.204.246.120:31511
-15.204.246.120:31512

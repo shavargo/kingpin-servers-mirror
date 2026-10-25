@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a merged Kingpin address list from Hambloch + community masters.
+"""Build a merged Kingpin address list from community masters.
 
 List entries are **game (connect) ports** only — what `+connect` uses.
 UDP status normally answers on query port = game − 10 (Kingpin convention).
@@ -11,6 +11,9 @@ masterN.kingpin.info aliases.
 Two master protocols:
   - Quake II UDP ``query`` on 27900 (Kingpin-native master software)
   - GameSpy v0 TCP list on 28900 (secure/validate; lists query ports)
+
+Previous ``servers.txt`` is always merged back in (no TTL). Master outages
+must not drop last-known game server addresses.
 """
 
 from __future__ import annotations
@@ -19,14 +22,8 @@ import re
 import socket
 import struct
 import sys
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-
-# Public Hambloch endpoint (game / connect ports).
-HAMBLOCH_GAMEPORT_URL = (
-	"https://hambloch.com/kingpin/servers_active.php?gameport=1"
-)
 
 # Quake II–style masters (UDP 27900, "query" → packed server list).
 # These run Kingpin-native master software and answer UDP query.
@@ -246,21 +243,6 @@ def parse_addr_file(text: str) -> list[str]:
 	return addrs
 
 
-def fetch_hambloch_gameports() -> list[str]:
-	req = urllib.request.Request(
-		HAMBLOCH_GAMEPORT_URL,
-		headers={
-			"User-Agent": (
-				"kingpin-servers-mirror/1.4 "
-				"(+https://github.com/shavargo/kingpin-servers-mirror)"
-			)
-		},
-	)
-	with urllib.request.urlopen(req, timeout=60) as resp:
-		text = resp.read().decode("utf-8", "replace")
-	return parse_addr_file(text)
-
-
 def normalize(addr: str) -> str | None:
 	m = ADDR_RE.match(addr.strip())
 	if not m:
@@ -279,6 +261,13 @@ def sort_key(addr: str) -> tuple:
 	return (tuple(int(x) for x in ip.split(".")), int(port_s))
 
 
+def load_cached_servers(path: Path) -> list[str]:
+	"""Addresses from the previous servers.txt (game ports). Missing file → []."""
+	if not path.is_file():
+		return []
+	return parse_addr_file(path.read_text(encoding="utf-8", errors="replace"))
+
+
 def main() -> int:
 	root = Path(__file__).resolve().parents[1]
 	out_path = root / "servers.txt"
@@ -286,15 +275,11 @@ def main() -> int:
 	sources: dict[str, list[str]] = {}
 	errors: list[str] = []
 
-	try:
-		sources["hambloch.com/servers_active.php?gameport=1"] = fetch_hambloch_gameports()
-		print(
-			"hambloch gameport: "
-			f"{len(sources['hambloch.com/servers_active.php?gameport=1'])} addresses"
-		)
-	except Exception as exc:  # noqa: BLE001
-		errors.append(f"hambloch: {exc}")
-		print(f"hambloch FAILED: {exc}", file=sys.stderr)
+	# Seed with last published list so master outages do not drop known servers.
+	cached = load_cached_servers(out_path)
+	if cached:
+		sources["cache:servers.txt"] = cached
+		print(f"cache servers.txt: {len(cached)} addresses")
 
 	for host in Q2_MASTERS:
 		label = f"q2udp://{host}:27900"
@@ -316,9 +301,14 @@ def main() -> int:
 			errors.append(f"{label}: {exc}")
 			print(f"{label} FAILED: {exc}", file=sys.stderr)
 
+	# Live sources first so header "first seen" labels prefer them over cache.
+	merge_order = [k for k in sources if k != "cache:servers.txt"]
+	if "cache:servers.txt" in sources:
+		merge_order.append("cache:servers.txt")
+
 	merged: dict[str, str] = {}
-	for label, addrs in sources.items():
-		for raw in addrs:
+	for label in merge_order:
+		for raw in sources[label]:
 			norm = normalize(raw)
 			if norm and norm not in merged:
 				merged[norm] = label
@@ -338,8 +328,11 @@ def main() -> int:
 		f"# Last fetch (UTC): {now}",
 		"# Sources:",
 	]
-	for label, addrs in sources.items():
-		lines.append(f"#   - {label}: {len(addrs)}")
+	for label in merge_order:
+		lines.append(f"#   - {label}: {len(sources[label])}")
+	cache_kept = sum(1 for src in merged.values() if src == "cache:servers.txt")
+	if cache_kept:
+		lines.append(f"# Cache-only addresses retained: {cache_kept}")
 	if errors:
 		lines.append("# Failures (non-fatal if other sources succeeded):")
 		for e in errors:
@@ -355,6 +348,8 @@ def main() -> int:
 
 	out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 	print(f"Wrote {len(merged)} unique addresses -> {out_path}")
+	if cache_kept:
+		print(f"Retained {cache_kept} cache-only addresses")
 	return 0
 
 

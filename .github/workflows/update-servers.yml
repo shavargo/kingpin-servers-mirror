@@ -32,5 +32,5 @@ jobs:
             echo "No changes"
             exit 0
           fi
-          git commit -m "chore: refresh servers.txt from Hambloch + masters"
+          git commit -m "chore: refresh servers.txt from masters"
           git push
