@@ -19,9 +19,11 @@ must not drop last-known game server addresses.
 from __future__ import annotations
 
 import re
+import select
 import socket
 import struct
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -165,21 +167,52 @@ def _recv_tcp(sock: socket.socket, first: float, more: float) -> bytes:
 	return b"".join(chunks)
 
 
+def _tcp_connect_ipv4(host: str, port: int, timeout: float) -> socket.socket:
+	"""Connect over IPv4 only (some masters advertise unreachable AAAA records)."""
+	infos = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+	last_exc: Exception | None = None
+	for family, socktype, proto, _, sockaddr in infos:
+		sock = socket.socket(family, socktype, proto)
+		sock.settimeout(timeout)
+		try:
+			sock.connect(sockaddr)
+			return sock
+		except Exception as exc:  # noqa: BLE001
+			last_exc = exc
+			sock.close()
+	if last_exc is not None:
+		raise last_exc
+	raise RuntimeError(f"no IPv4 address for {host}")
+
+
+def _read_gamespy_challenge(sock: socket.socket, wait: float = 5.0) -> bytes:
+	"""Wait for \\secure\\ challenge; nudge once if the master stays silent."""
+	# Block until readable (or timeout) instead of racing an early empty recv.
+	ready, _, _ = select.select([sock], [], [], wait)
+	if ready:
+		challenge = _recv_tcp(sock, 2.0, 0.4)
+		if b"\\secure\\" in challenge:
+			return challenge
+	# Some masters only greet after a first client byte.
+	try:
+		sock.sendall(b"\n")
+	except OSError as exc:
+		raise RuntimeError(f"connection dead before challenge: {exc}") from exc
+	ready, _, _ = select.select([sock], [], [], wait)
+	if not ready:
+		return b""
+	return _recv_tcp(sock, 2.0, 0.4)
+
+
 def _fetch_gamespy_master_once(
 	host: str,
 	port: int,
 	timeout: float,
 ) -> list[str]:
 	"""One TCP GameSpy v0 list attempt; returns **game** ports (query + 10)."""
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.settimeout(timeout)
+	sock = _tcp_connect_ipv4(host, port, timeout)
 	try:
-		sock.connect((host, port))
-		challenge = _recv_tcp(sock, 4.0, 0.5)
-		if not challenge:
-			# Some masters (e.g. frag-net) wait for a first byte before secure.
-			sock.sendall(b"\n")
-			challenge = _recv_tcp(sock, 4.0, 0.5)
+		challenge = _read_gamespy_challenge(sock)
 		if b"\\secure\\" not in challenge:
 			raise RuntimeError(f"no secure challenge: {challenge[:80]!r}")
 		secure = (
@@ -216,9 +249,9 @@ def fetch_gamespy_master(
 	host: str,
 	port: int = 28900,
 	timeout: float = 8.0,
-	attempts: int = 2,
+	attempts: int = 3,
 ) -> list[str]:
-	"""TCP GameSpy v0 list with a short retry (some masters are flaky)."""
+	"""TCP GameSpy v0 list with retries (fresh TCP each try; some masters flake)."""
 	last_exc: Exception | None = None
 	for i in range(attempts):
 		try:
@@ -226,6 +259,7 @@ def fetch_gamespy_master(
 		except Exception as exc:  # noqa: BLE001
 			last_exc = exc
 			if i + 1 < attempts:
+				time.sleep(0.4 * (i + 1))
 				continue
 	assert last_exc is not None
 	raise last_exc
