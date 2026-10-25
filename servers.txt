@@ -1,5 +1,5 @@
 # Merged Kingpin server address list (game / connect ports)
-# Last fetch (UTC): 2026-10-24T12:35:02Z
+# Last fetch (UTC): 2026-10-25T12:35:09Z
 # Sources:
 #   - hambloch.com/servers_active.php?gameport=1: 40
 #   - q2udp://master.hambloch.com:27900: 41
