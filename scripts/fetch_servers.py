@@ -185,15 +185,31 @@ def _tcp_connect_ipv4(host: str, port: int, timeout: float) -> socket.socket:
 	raise RuntimeError(f"no IPv4 address for {host}")
 
 
-def _read_gamespy_challenge(sock: socket.socket, wait: float = 5.0) -> bytes:
-	"""Wait for \\secure\\ challenge; nudge once if the master stays silent."""
-	# Block until readable (or timeout) instead of racing an early empty recv.
+def _read_gamespy_challenge(
+	sock: socket.socket,
+	wait: float = 8.0,
+	nudge_first: bool = False,
+) -> bytes:
+	"""Wait for \\secure\\ challenge; optionally nudge, never nudge a dead socket."""
+	if nudge_first:
+		try:
+			sock.sendall(b"\n")
+		except OSError as exc:
+			raise RuntimeError(f"connection dead before challenge: {exc}") from exc
+
 	ready, _, _ = select.select([sock], [], [], wait)
 	if ready:
 		challenge = _recv_tcp(sock, 2.0, 0.4)
 		if b"\\secure\\" in challenge:
 			return challenge
-	# Some masters only greet after a first client byte.
+		# Readable but empty ⇒ peer closed; retry needs a new socket.
+		if not challenge:
+			return b""
+
+	if nudge_first:
+		return b""
+
+	# Silent after connect — some masters want a first client byte.
 	try:
 		sock.sendall(b"\n")
 	except OSError as exc:
@@ -208,11 +224,12 @@ def _fetch_gamespy_master_once(
 	host: str,
 	port: int,
 	timeout: float,
+	nudge_first: bool = False,
 ) -> list[str]:
 	"""One TCP GameSpy v0 list attempt; returns **game** ports (query + 10)."""
 	sock = _tcp_connect_ipv4(host, port, timeout)
 	try:
-		challenge = _read_gamespy_challenge(sock)
+		challenge = _read_gamespy_challenge(sock, nudge_first=nudge_first)
 		if b"\\secure\\" not in challenge:
 			raise RuntimeError(f"no secure challenge: {challenge[:80]!r}")
 		secure = (
@@ -248,18 +265,21 @@ def _fetch_gamespy_master_once(
 def fetch_gamespy_master(
 	host: str,
 	port: int = 28900,
-	timeout: float = 8.0,
-	attempts: int = 3,
+	timeout: float = 10.0,
+	attempts: int = 5,
 ) -> list[str]:
 	"""TCP GameSpy v0 list with retries (fresh TCP each try; some masters flake)."""
 	last_exc: Exception | None = None
 	for i in range(attempts):
 		try:
-			return _fetch_gamespy_master_once(host, port, timeout)
+			# Alternate wait-first vs nudge-first; masters disagree on greeting.
+			return _fetch_gamespy_master_once(
+				host, port, timeout, nudge_first=(i % 2 == 1)
+			)
 		except Exception as exc:  # noqa: BLE001
 			last_exc = exc
 			if i + 1 < attempts:
-				time.sleep(0.4 * (i + 1))
+				time.sleep(0.5 * (i + 1))
 				continue
 	assert last_exc is not None
 	raise last_exc
@@ -325,6 +345,7 @@ def main() -> int:
 			errors.append(f"{label}: {exc}")
 			print(f"{label} FAILED: {exc}", file=sys.stderr)
 
+	gamespy_failed: list[str] = []
 	for host in GAMESPY_MASTERS:
 		label = f"gamespy://{host}:28900"
 		try:
@@ -332,8 +353,28 @@ def main() -> int:
 			sources[label] = addrs
 			print(f"{label}: {len(addrs)} addresses")
 		except Exception as exc:  # noqa: BLE001
+			gamespy_failed.append(host)
 			errors.append(f"{label}: {exc}")
 			print(f"{label} FAILED: {exc}", file=sys.stderr)
+
+	# Second pass for flaky GameSpy masters (common from CI egress IPs).
+	if gamespy_failed:
+		time.sleep(1.0)
+		still_failed: list[str] = []
+		for host in gamespy_failed:
+			label = f"gamespy://{host}:28900"
+			try:
+				addrs = fetch_gamespy_master(host, attempts=5, timeout=12.0)
+				sources[label] = addrs
+				errors = [e for e in errors if not e.startswith(f"{label}:")]
+				print(f"{label}: {len(addrs)} addresses (retry)")
+			except Exception as exc:  # noqa: BLE001
+				still_failed.append(host)
+				# Keep the latest error text for this host.
+				errors = [e for e in errors if not e.startswith(f"{label}:")]
+				errors.append(f"{label}: {exc}")
+				print(f"{label} FAILED on retry: {exc}", file=sys.stderr)
+		gamespy_failed = still_failed
 
 	# Live sources first so header "first seen" labels prefer them over cache.
 	merge_order = [k for k in sources if k != "cache:servers.txt"]
