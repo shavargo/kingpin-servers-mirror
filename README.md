@@ -11,14 +11,17 @@ Addresses are **game (connect) ports** — what you pass to `+connect`. Live nam
 | Source | How |
 |--------|-----|
 | Previous `servers.txt` | Always merged back in (cache; no TTL) so master outages do not drop known IPs |
+| [hambloch.com/kingpin/servers_active.php?gameport=1](https://hambloch.com/kingpin/servers_active.php?gameport=1) | Active servers with **game** ports (preferred public endpoint) |
 | `master.hambloch.com`, `master.shavargo.com` | Quake II UDP `query` on **27900** (Kingpin-native master software) |
 | `master.errorist.eu`, `master.333networks.com`, `master.frag-net.com` | GameSpy v0 TCP list on **28900** (query ports → stored as query+10) |
 
 Addresses are unioned and deduped. We do **not** list both query and game ports for the same server.
 
+Alternate Hambloch URL (query ports only): https://hambloch.com/kingpin/servers_active.php
+
 ## Why
 
-Hitting masters on every launcher refresh can look like abuse and get client IPs blocked. One GitHub Action run per day pulls upstream so apps can use a stable raw URL.
+Hitting Hambloch/masters on every launcher refresh can look like abuse and get client IPs blocked. One GitHub Action run per day pulls upstream so apps can use a stable raw URL.
 
 ## Update schedule
 
@@ -33,4 +36,4 @@ python3 scripts/fetch_servers.py
 
 ## Attribution
 
-Server list data originates from [M. Hambloch](https://hambloch.com/kingpin/), [333networks](https://master.333networks.com/s/kingpin), and other community masters. Unofficial cache — not affiliated with those operators.
+Server list data originates from [M. Hambloch](https://hambloch.com/kingpin/), [333networks](https://master.333networks.com/s/kingpin), and other community masters. Unofficial cache — not affiliated with those operators. Thanks to Hambloch for the correct public endpoints.

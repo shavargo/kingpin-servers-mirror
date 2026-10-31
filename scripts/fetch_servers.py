@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a merged Kingpin address list from community masters.
+"""Build a merged Kingpin address list from Hambloch + community masters.
 
 List entries are **game (connect) ports** only — what `+connect` uses.
 UDP status normally answers on query port = game − 10 (Kingpin convention).
@@ -8,7 +8,8 @@ Master hostnames are the real DNS names from
 https://wiki.kingpin.info/index.php/Ports (Details column), not the
 masterN.kingpin.info aliases.
 
-Two master protocols:
+Sources:
+  - Hambloch ``servers_active.php?gameport=1`` (HTTP, game ports)
   - Quake II UDP ``query`` on 27900 (Kingpin-native master software)
   - GameSpy v0 TCP list on 28900 (secure/validate; lists query ports)
 
@@ -24,8 +25,15 @@ import socket
 import struct
 import sys
 import time
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Public Hambloch endpoint (game / connect ports).
+HAMBLOCH_GAMEPORT_URL = (
+	"https://hambloch.com/kingpin/servers_active.php?gameport=1"
+)
+HAMBLOCH_SOURCE_LABEL = "hambloch.com/servers_active.php?gameport=1"
 
 # Quake II–style masters (UDP 27900, "query" → packed server list).
 # These run Kingpin-native master software and answer UDP query.
@@ -297,6 +305,21 @@ def parse_addr_file(text: str) -> list[str]:
 	return addrs
 
 
+def fetch_hambloch_gameports() -> list[str]:
+	req = urllib.request.Request(
+		HAMBLOCH_GAMEPORT_URL,
+		headers={
+			"User-Agent": (
+				"kingpin-servers-mirror/1.5 "
+				"(+https://github.com/shavargo/kingpin-servers-mirror)"
+			)
+		},
+	)
+	with urllib.request.urlopen(req, timeout=60) as resp:
+		text = resp.read().decode("utf-8", "replace")
+	return parse_addr_file(text)
+
+
 def normalize(addr: str) -> str | None:
 	m = ADDR_RE.match(addr.strip())
 	if not m:
@@ -334,6 +357,13 @@ def main() -> int:
 	if cached:
 		sources["cache:servers.txt"] = cached
 		print(f"cache servers.txt: {len(cached)} addresses")
+
+	try:
+		sources[HAMBLOCH_SOURCE_LABEL] = fetch_hambloch_gameports()
+		print(f"hambloch gameport: {len(sources[HAMBLOCH_SOURCE_LABEL])} addresses")
+	except Exception as exc:  # noqa: BLE001
+		errors.append(f"hambloch: {exc}")
+		print(f"hambloch FAILED: {exc}", file=sys.stderr)
 
 	for host in Q2_MASTERS:
 		label = f"q2udp://{host}:27900"
@@ -376,8 +406,13 @@ def main() -> int:
 				print(f"{label} FAILED on retry: {exc}", file=sys.stderr)
 		gamespy_failed = still_failed
 
-	# Live sources first so header "first seen" labels prefer them over cache.
-	merge_order = [k for k in sources if k != "cache:servers.txt"]
+	# Live sources first (Hambloch preferred) so header labels prefer them over cache.
+	merge_order: list[str] = []
+	if HAMBLOCH_SOURCE_LABEL in sources:
+		merge_order.append(HAMBLOCH_SOURCE_LABEL)
+	merge_order.extend(
+		k for k in sources if k not in (HAMBLOCH_SOURCE_LABEL, "cache:servers.txt")
+	)
 	if "cache:servers.txt" in sources:
 		merge_order.append("cache:servers.txt")
 
