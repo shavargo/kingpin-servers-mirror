@@ -1,14 +1,14 @@
 # Merged Kingpin server address list (game / connect ports)
-# Last fetch (UTC): 2026-11-01T12:23:38Z
+# Last fetch (UTC): 2026-11-02T12:26:42Z
 # Sources:
-#   - hambloch.com/servers_active.php?gameport=1: 34
-#   - q2udp://master.hambloch.com:27900: 35
+#   - hambloch.com/servers_active.php?gameport=1: 33
+#   - q2udp://master.hambloch.com:27900: 34
 #   - q2udp://master.shavargo.com:27900: 8
-#   - gamespy://master.errorist.eu:28900: 30
-#   - gamespy://master.333networks.com:28900: 30
-#   - gamespy://master.frag-net.com:28900: 30
-#   - cache:servers.txt: 44
-# Cache-only addresses retained: 9
+#   - gamespy://master.errorist.eu:28900: 28
+#   - gamespy://master.333networks.com:28900: 28
+#   - gamespy://master.frag-net.com:28900: 28
+#   - cache:servers.txt: 45
+# Cache-only addresses retained: 11
 #
 # Format: ip:gameport  (UDP status usually on gameport-10; launcher probes both)
 #
